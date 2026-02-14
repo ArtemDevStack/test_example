@@ -66,4 +66,11 @@ export class ResponseUtil {
   static noContent(res: Response): Response {
     return res.status(204).send();
   }
+
+  /**
+   * Ответ с ошибкой 400 (Bad Request)
+   */
+  static badRequest(res: Response, message: string, details?: unknown): Response {
+    return this.error(res, message, 400, details);
+  }
 }

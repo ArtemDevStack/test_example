@@ -2,6 +2,8 @@ import { User } from '../../generated/prisma/index.js';
 import { UsersRepository } from '../users/users.repository.js';
 import { ArgonUtil } from '../../utils/argon.util.js';
 import { JwtUtil } from '../../utils/jwt.util.js';
+import { JwtConfig } from '../../config/jwt.config.js';
+import { TokenBlacklistService } from '../../services/token-blacklist.service.js';
 import { BadRequestException, UnauthorizedException } from '../../shared/exceptions/index.js';
 import { ErrorMessages } from '../../shared/constants/errors.constants.js';
 import { IRegisterData, ILoginCredentials, IAuthTokens } from '../../shared/types/auth.types.js';
@@ -31,6 +33,13 @@ export class AuthService {
 
     // Генерация токенов (tokenVersion = 0 по умолчанию)
     const tokens = this.generateTokens(user);
+
+    // Сохраняем refresh token в Redis
+    await TokenBlacklistService.saveRefreshToken(
+      user.id,
+      tokens.refreshToken,
+      JwtConfig.getRefreshTokenExpiresInSeconds()
+    );
 
     return {
       user,
@@ -69,10 +78,92 @@ export class AuthService {
     // Генерация токенов
     const tokens = this.generateTokens(updatedUser);
 
+    // Сохраняем refresh token в Redis
+    await TokenBlacklistService.saveRefreshToken(
+      updatedUser.id,
+      tokens.refreshToken,
+      JwtConfig.getRefreshTokenExpiresInSeconds()
+    );
+
     return {
-      user,
+      user: updatedUser,
       tokens,
     };
+  }
+
+  /**
+   * Выход из системы (logout)
+   */
+  async logout(userId: string, accessToken: string): Promise<void> {
+    // Добавляем access token в blacklist
+    const expiresIn = JwtUtil.getTokenExpiration(accessToken) || JwtConfig.getAccessTokenExpiresInSeconds();
+    await TokenBlacklistService.blacklistToken(accessToken, expiresIn);
+
+    // Удаляем refresh token из Redis
+    await TokenBlacklistService.deleteRefreshToken(userId);
+  }
+
+  /**
+   * Обновление токена (refresh)
+   */
+  async refreshToken(refreshToken: string, oldAccessToken?: string): Promise<IAuthTokens> {
+    // Верифицируем refresh token
+    let payload: IUserPayload;
+    try {
+      payload = JwtUtil.verifyToken(refreshToken);
+    } catch (error) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    // Проверяем, что токен не в blacklist
+    const isBlacklisted = await TokenBlacklistService.isBlacklisted(refreshToken);
+    if (isBlacklisted) {
+      throw new UnauthorizedException('Refresh token has been revoked');
+    }
+
+    // Проверяем, что refresh token существует в Redis
+    const storedToken = await TokenBlacklistService.getRefreshToken(payload.id);
+    if (!storedToken || storedToken !== refreshToken) {
+      throw new UnauthorizedException('Refresh token not found or invalid');
+    }
+
+    // Получаем пользователя
+    const user = await this.usersRepository.findById(payload.id);
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('User not found or inactive');
+    }
+
+    // Проверяем версию токена
+    if (user.tokenVersion !== payload.tokenVersion) {
+      throw new UnauthorizedException('Token version mismatch');
+    }
+
+    // ВАЖНО: Увеличиваем tokenVersion - это инвалидирует ВСЕ старые токены
+    const updatedUser = await this.usersRepository.update(user.id, {
+      tokenVersion: user.tokenVersion + 1,
+    });
+
+    // Добавляем старый access token в blacklist (если предоставлен)
+    if (oldAccessToken) {
+      const accessTokenExpiration = JwtUtil.getTokenExpiration(oldAccessToken) || JwtConfig.getAccessTokenExpiresInSeconds();
+      await TokenBlacklistService.blacklistToken(oldAccessToken, accessTokenExpiration);
+    }
+
+    // Добавляем старый refresh token в blacklist
+    const oldTokenExpiration = JwtUtil.getTokenExpiration(refreshToken) || JwtConfig.getRefreshTokenExpiresInSeconds();
+    await TokenBlacklistService.blacklistToken(refreshToken, oldTokenExpiration);
+
+    // Генерируем новую пару токенов с НОВОЙ версией
+    const tokens = this.generateTokens(updatedUser);
+
+    // Сохраняем новый refresh token
+    await TokenBlacklistService.saveRefreshToken(
+      updatedUser.id,
+      tokens.refreshToken,
+      JwtConfig.getRefreshTokenExpiresInSeconds()
+    );
+
+    return tokens;
   }
 
   /**
@@ -86,10 +177,11 @@ export class AuthService {
       tokenVersion: user.tokenVersion,
     };
 
-    const accessToken = JwtUtil.generateToken(payload);
+    const { accessToken, refreshToken } = JwtUtil.generateTokenPair(payload);
 
     return {
       accessToken,
+      refreshToken,
     };
   }
 }

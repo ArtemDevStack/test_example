@@ -39,3 +39,6 @@ export const validateDto = <T extends object>(dtoClass: ClassConstructor<T>) => 
     }
   };
 };
+
+// Alias for compatibility
+export const validateRequest = validateDto;

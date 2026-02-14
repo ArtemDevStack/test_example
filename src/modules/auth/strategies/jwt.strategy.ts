@@ -1,7 +1,9 @@
-import { Strategy as JwtStrategy, ExtractJwt, StrategyOptions } from 'passport-jwt';
+import { Strategy as JwtStrategy, ExtractJwt, StrategyOptions,VerifiedCallback } from 'passport-jwt';
 import { JwtConfig } from '../../../config/jwt.config.js';
 import { UsersRepository } from '../../users/users.repository.js';
 import { IUserPayload } from '../../../shared/types/express.types.js';
+import { TokenBlacklistService } from '../../../services/token-blacklist.service.js';
+import { Request } from 'express';
 
 export class PassportJwtStrategy {
   constructor(private readonly usersRepository: UsersRepository) {}
@@ -10,10 +12,24 @@ export class PassportJwtStrategy {
     const options: StrategyOptions = {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       secretOrKey: JwtConfig.SECRET,
+      passReqToCallback: true, // Передаем request для получения токена
     };
 
-    return new JwtStrategy(options, async (payload: IUserPayload, done) => {
+    return new JwtStrategy(options, async (req: Request, payload: IUserPayload, done: VerifiedCallback) => {
       try {
+        // Извлекаем токен из заголовка
+        const token = ExtractJwt.fromAuthHeaderAsBearerToken()(req);
+        
+        if (!token) {
+          return done(null, false);
+        }
+
+        // Проверяем, находится ли токен в черном списке
+        const isBlacklisted = await TokenBlacklistService.isBlacklisted(token);
+        if (isBlacklisted) {
+          return done(null, false);
+        }
+
         const user = await this.usersRepository.findById(payload.id);
 
         if (!user) {

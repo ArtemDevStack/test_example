@@ -1,377 +1,219 @@
-# User Management Service
+# E-Commerce REST API
 
-Сервис работы с пользователями на TypeScript + Express + Prisma + PostgreSQL с полной REST API документацией.
+RESTful API для интернет-магазина с полным функционалом управления товарами, заказами и аналитикой.
 
-## 🚀 Технологический стек
+## 🚀 Технологии
 
-- **Runtime:** Node.js / Bun
-- **Framework:** Express
-- **Language:** TypeScript
-- **Database:** PostgreSQL
-- **ORM:** Prisma
-- **Authentication:** JWT + Passport
-- **Password Hashing:** Argon2
-- **Validation:** class-validator + class-transformer
-- **Logging:** Winston + Morgan
-- **Documentation:** Swagger/OpenAPI
-- **Security:** Helmet, CORS, Rate Limiting
+- **Node.js** + **TypeScript**
+- **Express** - веб-фреймворк
+- **Prisma ORM** - работа с базой данных
+- **PostgreSQL** - база данных
+- **Redis** - кэширование
+- **Passport JWT** - аутентификация
+- **Argon2** - хеширование паролей
+- **Swagger** - документация API
 
-## 📁 Структура проекта
+## 📋 Функционал
 
-```
-src/
-├── shared/              # Переиспользуемые компоненты
-│   ├── exceptions/      # Кастомные исключения
-│   ├── interfaces/      # Общие интерфейсы
-│   ├── types/           # Общие типы
-│   └── constants/       # Константы
-├── config/              # Конфигурация
-├── modules/             # Модульная структура
-│   ├── auth/            # Модуль аутентификации
-│   └── users/           # Модуль пользователей
-├── middlewares/         # Middleware
-├── database/            # Работа с БД
-├── utils/               # Утилиты
-├── app.ts               # Express приложение
-└── server.ts            # Server entry point
-```
+### Модули API:
+- ✅ **Аутентификация** - регистрация, вход, выход
+- ✅ **Пользователи** - управление пользователями (CRUD)
+- ✅ **Категории** - иерархические категории товаров
+- ✅ **Товары** - каталог с фильтрацией и поиском
+- ✅ **Заказы** - оформление и управление заказами
+- ✅ **Отзывы** - рейтинги и комментарии к товарам
+- ✅ **Аналитика** - статистика продаж (только для админов)
 
-## 🛠️ Установка и запуск
+### Возможности:
+- 🔐 JWT аутентификация
+- 👥 Ролевая модель (ADMIN, USER)
+- 🔍 Поиск и фильтрация товаров
+- 📦 Пагинация
+- 🛡️ Валидация данных
+- 📊 Swagger документация
+- 🚦 Rate limiting
+- 📝 Логирование (Winston)
 
-### 1. Клонирование и установка зависимостей
+## 🏁 Быстрый старт
 
+### Предварительные требования
+
+- Node.js >= 18
+- PostgreSQL >= 14
+- Redis >= 6 (опционально)
+
+### Установка
+
+1. **Клонирование репозитория:**
 ```bash
-# Установка зависимостей
-bun install
-# или
+git clone git@github.com:artyom-develop/ecommerce-rest-api.git
+cd ecommerce-rest-api
+```
+
+2. **Установка зависимостей:**
+```bash
 npm install
 ```
 
-### 2. Настройка переменных окружения
-
-Создайте файл `.env` на основе `.env.example`:
-
-```env
-# Database
-DATABASE_URL=postgresql://user:password@localhost:5432/dbname
-
-# Server
-PORT=3000
-NODE_ENV=development
-
-# JWT
-JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
-JWT_EXPIRES_IN=24h
-
-# Argon2 Settings
-ARGON2_MEMORY_COST=65536
-ARGON2_TIME_COST=3
-ARGON2_PARALLELISM=4
-```
-### 3. Применение миграций
-
+3. **Настройка переменных окружения:**
 ```bash
-bun run prisma:generate
-bun run prisma:migrate
+cp .env.example .env
 ```
 
-### 4. Seed данных (опционально)
+Отредактируйте `.env` файл с вашими настройками.
 
+4. **Генерация Prisma Client:**
 ```bash
-bun run prisma:seed
+npm run prisma:generate
 ```
 
-Будут созданы тестовые пользователи:
-- **Admin:** admin@example.com / Admin@12345
-- **User:** user@example.com / User@12345
+5. **Применение миграций:**
+```bash
+npm run prisma:migrate
+```
 
-### 5. Запуск сервера
+6. **Заполнение БД тестовыми данными:**
+```bash
+npm run prisma:seed
+```
 
+7. **Запуск проекта:**
 ```bash
 # Development
-bun run dev
+npm run dev
 
-# Production
-bun run build
-bun run start
+# Production build
+npm run build
+npm start
 ```
 
-## 📚 API Documentation
+## 🐳 Docker
 
-### Swagger UI (интерактивная документация)
+Запуск через Docker Compose:
 
-После запуска сервера откройте:
-- **Swagger UI:** http://localhost:3000/api-docs
-- **OpenAPI JSON:** http://localhost:3000/api-docs.json
+```bash
+docker-compose up -d
+```
 
-Swagger UI предоставляет:
-- ✅ Полную интерактивную документацию всех endpoints
-- ✅ Возможность тестирования API прямо из браузера
-- ✅ Автоматическую валидацию запросов и ответов
-- ✅ Примеры запросов и ответов
-- ✅ Авторизацию через JWT токен (кнопка "Authorize")
+Это автоматически поднимет:
+- PostgreSQL
+- PgAdmin (http://localhost:5050)
+- Application
 
-### Основные endpoints:
+## 📖 API Документация
 
-#### 🔐 Authentication
-- `POST /api/auth/register` - Регистрация нового пользователя
-- `POST /api/auth/login` - Авторизация и получение JWT токена
+После запуска проекта документация доступна по адресу:
 
-#### 👥 Users (требуется авторизация)
-- `GET /api/users/:id` - Получение пользователя по ID (админ или сам пользователь)
-- `GET /api/users` - Список всех пользователей с пагинацией (только админ)
-- `PATCH /api/users/:id/block` - Блокировка/разблокировка пользователя (админ или сам пользователь)
-- `DELETE /api/users/:id` - Удаление пользователя (только админ)
+**Swagger UI:** http://localhost:3000/api-docs
 
-#### 🏥 Utility
-- `GET /health` - Health check сервера
+### Тестовые аккаунты
 
-### Подробная документация
+**Администратор:**
+- Email: `admin@example.com`
+- Password: `Admin@12345`
 
-См. также [API.md](./API.md) для детальных примеров запросов и ответов.
+**Пользователь:**
+- Email: `user@example.com`
+- Password: `User@12345`
+
+## 🗂️ Структура проекта
+
+```
+src/
+├── config/          # Конфигурация (DB, JWT, Swagger, etc.)
+├── database/        # Prisma client и seeds
+├── middlewares/     # Express middlewares
+├── modules/         # Бизнес-логика (controllers, services, repositories)
+│   ├── auth/
+│   ├── users/
+│   ├── categories/
+│   ├── products/
+│   ├── orders/
+│   ├── reviews/
+│   └── analytics/
+├── shared/          # Общие утилиты, константы, типы
+├── utils/           # Вспомогательные функции
+├── app.ts           # Express application
+└── server.ts        # Entry point
+```
+
+## 🔧 NPM Scripts
+
+```bash
+npm run dev              # Запуск в режиме разработки
+npm run build            # Сборка проекта
+npm start                # Запуск production версии
+npm run prisma:generate  # Генерация Prisma Client
+npm run prisma:migrate   # Применение миграций
+npm run prisma:seed      # Заполнение БД тестовыми данными
+npm run prisma:studio    # Prisma Studio
+```
+
+## 📝 Примеры запросов
+
+### Авторизация
+```bash
+POST /api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "Admin@12345"
+}
+```
+
+### Получение товаров
+```bash
+GET /api/products?page=1&limit=10&search=iphone
+```
+
+### Создание заказа
+```bash
+POST /api/orders
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "productId": "...",
+      "quantity": 2
+    }
+  ]
+}
+```
 
 ## 🔒 Безопасность
 
-- Пароли хешируются с **Argon2** (устойчив к GPU атакам)
-- JWT токены для авторизации
-- Rate limiting на критичных endpoints
-- Helmet для security headers
-- Валидация всех входящих данных
-- CORS policies
-- SQL injection защита (Prisma)
+- ✅ JWT токены для аутентификации
+- ✅ Argon2 для хеширования паролей
+- ✅ Helmet для защиты HTTP заголовков
+- ✅ CORS настроен
+- ✅ Rate limiting
+- ✅ Валидация входящих данных
 
-## 🏗️ Архитектурные принципы
+## 📊 База данных
 
-- **SOLID принципы**
-- **Repository Pattern** - изоляция логики работы с БД
-- **Service Layer** - бизнес-логика
-- **DTO Pattern** - валидация и трансформация
-- **Dependency Injection** - через конструкторы
-- **Централизованная обработка ошибок**
-- **Class-based architecture**
+Проект использует Prisma ORM с PostgreSQL. Схема включает:
 
-## 📊 Модель данных
+- **User** - пользователи
+- **Category** - категории (с поддержкой вложенности)
+- **Product** - товары
+- **Order** - заказы
+- **OrderItem** - позиции заказа
+- **Review** - отзывы
 
-```prisma
-model User {
-  id           String   @id @default(uuid())
-  firstName    String
-  lastName     String
-  middleName   String?
-  dateOfBirth  DateTime
-  email        String   @unique
-  password     String
-  role         Role     @default(USER)
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-}
+## 🤝 Вклад в проект
 
-enum Role {
-  ADMIN
-  USER
-}
-```
+Contributions, issues и feature requests приветствуются!
 
-## 🧪 Примеры запросов
+## 📄 Лицензия
 
-### Использование Swagger UI (рекомендуется)
+MIT
 
-1. Запустите сервер: `bun run dev`
-2. Откройте http://localhost:3000/api-docs
-3. Используйте интерактивный интерфейс для тестирования API
+## 👤 Автор
 
-### Использование cURL
+**Artyom**
 
-#### Регистрация
+- GitHub: [@artyom-develop](https://github.com/artyom-develop)
 
-```bash
-curl -X POST http://localhost:3000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "firstName": "Иван",
-    "lastName": "Иванов",
-    "middleName": "Иванович",
-    "dateOfBirth": "1990-01-15",
-    "email": "ivan@example.com",
-    "password": "SecurePass123"
-  }'
-```
-
-**Ответ:**
-```json
-{
-  "success": true,
-  "data": {
-    "user": {
-      "id": "uuid",
-      "firstName": "Иван",
-      "lastName": "Иванов",
-      "email": "ivan@example.com",
-      "role": "USER",
-      "isActive": true
-    },
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-  },
-  "message": "Регистрация успешна"
-}
-```
-
-#### Авторизация
-
-```bash
-curl -X POST http://localhost:3000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "ivan@example.com",
-    "password": "SecurePass123"
-  }'
-```
-
-**Ответ:**
-```json
-{
-  "success": true,
-  "data": {
-    "user": {
-      "id": "uuid",
-      "email": "ivan@example.com",
-      "role": "USER"
-    },
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-  },
-  "message": "Авторизация успешна"
-}
-```
-
-#### Получение пользователя
-
-```bash
-curl -X GET http://localhost:3000/api/users/{id} \
-  -H "Authorization: Bearer {your-token}"
-```
-
-#### Получение списка пользователей (только админ)
-
-```bash
-curl -X GET "http://localhost:3000/api/users?page=1&limit=10" \
-  -H "Authorization: Bearer {admin-token}"
-```
-
-**Ответ:**
-```json
-{
-  "success": true,
-  "data": [...],
-  "pagination": {
-    "page": 1,
-    "limit": 10,
-    "total": 50,
-    "totalPages": 5
-  }
-}
-```
-
-#### Блокировка пользователя
-
-```bash
-curl -X PATCH http://localhost:3000/api/users/{id}/block \
-  -H "Authorization: Bearer {your-token}"
-```
-
-## 🛡️ Разграничение прав доступа
-
-| Endpoint | Описание | Admin | User (сам себя) |
-|----------|----------|-------|-----------------|
-| POST /auth/register | Регистрация | ✅ | ✅ |
-| POST /auth/login | Авторизация | ✅ | ✅ |
-| GET /users/:id | Получение пользователя | ✅ | ✅ |
-| GET /users | Список пользователей | ✅ | ❌ |
-| PATCH /users/:id/block | Блокировка | ✅ | ✅ |
-| DELETE /users/:id | Удаление | ✅ | ❌ |
-
-## 📝 Скрипты
-
-```json
-{
-  "dev": "nodemon --watch",
-  "build": "tsc",
-  "start": "node dist/server.js",
-  "prisma:generate": "prisma generate",
-  "prisma:migrate": "prisma migrate dev",
-  "prisma:seed": "ts-node src/database/seed.ts",
-  "prisma:studio": "prisma studio"
-}
-```
-
-## 🔧 Дополнительные команды
-
-```bash
-# Prisma Studio (GUI для БД)
-bun run prisma:studio
-
-# Форматирование Prisma schema
-bunx prisma format
-
-# Проверка TypeScript
-bunx tsc --noEmit
-```
-
-## 📦 Зависимости
-
-### Production
-- **express** - Web framework
-- **prisma** + **@prisma/adapter-pg** - ORM с PostgreSQL адаптером
-- **pg** - PostgreSQL клиент
-- **argon2** - Password hashing (современная альтернатива bcrypt)
-- **passport** + **passport-jwt** - Стратегии аутентификации
-- **jsonwebtoken** - JWT tokens
-- **class-validator** + **class-transformer** - DTO валидация
-- **helmet** - Security headers
-- **cors** - CORS middleware
-- **express-rate-limit** - Rate limiting
-- **winston** + **morgan** - Logging
-- **swagger-ui-express** + **swagger-jsdoc** - API документация
-- **dotenv** - Environment variables
-
-### Development
-- **typescript** - Type safety
-- **nodemon** - Auto-restart
-- **@types/*** - Type definitions
-
-## 🌟 Особенности
-
-- ✅ **TypeScript** - полная типизация
-- ✅ **Clean Architecture** - разделение на слои (Repository, Service, Controller)
-- ✅ **SOLID принципы** - масштабируемая архитектура
-- ✅ **JWT Authentication** - безопасная авторизация
-- ✅ **Argon2 Hashing** - современное хеширование паролей
-- ✅ **Swagger Documentation** - интерактивная API документация
-- ✅ **Validation** - автоматическая валидация DTO
-- ✅ **Error Handling** - централизованная обработка ошибок
-- ✅ **Logging** - structured logging с Winston
-- ✅ **Rate Limiting** - защита от brute-force
-- ✅ **Database Migrations** - Prisma migrations
-- ✅ **Seed Data** - тестовые данные
-- ✅ **Health Checks** - мониторинг состояния
-
-## 📖 Дополнительные ресурсы
-
-- [Swagger UI](http://localhost:3000/api-docs) - Интерактивная документация API
-- [API.md](./API.md) - Детальная документация endpoints
-- [Prisma Docs](https://www.prisma.io/docs) - Документация ORM
-- [Passport.js](http://www.passportjs.org/) - Документация аутентификации
-
-## ✅ Выполненные требования ТЗ
-
-- ✅ Модель пользователя с ФИО, датой рождения, email, паролем, ролью, статусом
-- ✅ Регистрация пользователя
-- ✅ Авторизация с JWT
-- ✅ Получение пользователя по ID с проверкой прав
-- ✅ Получение списка пользователей (только админ)
-- ✅ Блокировка пользователя с проверкой прав
-- ✅ Архитектура с соблюдением best practices
-- ✅ TypeScript
-- ✅ Express
-- ✅ PostgreSQL + Prisma
-- ✅ Масштабируемая структура проекта

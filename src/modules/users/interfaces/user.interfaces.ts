@@ -43,3 +43,6 @@ export interface IUsersRepository {
   updateActiveStatus(id: string, isActive: boolean): Promise<User>;
   delete(id: string): Promise<void>;
 }
+
+// Re-export User type as IUser for compatibility
+export type IUser = User;

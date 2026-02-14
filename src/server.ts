@@ -1,6 +1,8 @@
+import 'reflect-metadata';
 import { Server as HttpServer } from 'http';
 import { App } from './app.js';
 import { Database } from './database/prisma.client.js';
+import { connectRedis, disconnectRedis } from './config/redis.config.js';
 import { AppConfig } from './config/app.config.js';
 import { DatabaseConfig } from './config/database.config.js';
 import { JwtConfig } from './config/jwt.config.js';
@@ -31,6 +33,9 @@ class Server {
         throw new Error('Database health check failed');
       }
 
+      // Подключение к Redis
+      await connectRedis();
+
       // Запуск HTTP сервера
       const server = this.app.getApp().listen(AppConfig.PORT, () => {
         logger.info(`🚀 Server started on port ${AppConfig.PORT}`);
@@ -58,8 +63,12 @@ class Server {
         logger.info('HTTP server closed');
 
         try {
+          await disconnectRedis();
+          logger.info('Redis connection closed');
+          
           await Database.disconnect();
           logger.info('Database connection closed');
+          
           process.exit(0);
         } catch (error) {
           logger.error('Error during shutdown:', error);

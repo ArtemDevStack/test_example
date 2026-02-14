@@ -4,7 +4,7 @@ import { IUserPayload } from '../shared/types/express.types.js';
 
 export class JwtUtil {
   /**
-   * Генерация JWT токена
+   * Генерация Access токена
    */
   static generateToken(payload: IUserPayload): string {
     return jwt.sign(
@@ -14,6 +14,29 @@ export class JwtUtil {
         expiresIn: JwtConfig.EXPIRES_IN,
       } as SignOptions
     );
+  }
+
+  /**
+   * Генерация Refresh токена
+   */
+  static generateRefreshToken(payload: IUserPayload): string {
+    return jwt.sign(
+      payload,
+      JwtConfig.SECRET as Secret,
+      {
+        expiresIn: JwtConfig.REFRESH_EXPIRES_IN,
+      } as SignOptions
+    );
+  }
+
+  /**
+   * Генерация пары токенов (access + refresh)
+   */
+  static generateTokenPair(payload: IUserPayload): { accessToken: string; refreshToken: string } {
+    return {
+      accessToken: this.generateToken(payload),
+      refreshToken: this.generateRefreshToken(payload),
+    };
   }
 
   /**
@@ -29,5 +52,17 @@ export class JwtUtil {
   static decodeToken(token: string): IUserPayload | null {
     const decoded = jwt.decode(token);
     return decoded as IUserPayload | null;
+  }
+
+  /**
+   * Получить время жизни токена в секундах
+   */
+  static getTokenExpiration(token: string): number | null {
+    const decoded = jwt.decode(token) as any;
+    if (decoded && decoded.exp) {
+      const now = Math.floor(Date.now() / 1000);
+      return decoded.exp - now;
+    }
+    return null;
   }
 }
